@@ -10,8 +10,10 @@ import (
 // When a new image is uploaded, it runs it through OCR and saves the decoded text into the JSON
 
 var (
-	urlDescription = "Sync gateway url, with db name and no trailing slash"
-	url            = kingpin.Arg("url", urlDescription).String()
+	urlDescription   = "Sync gateway url, with db name and no trailing slash"
+	url              = kingpin.Arg("url", urlDescription).String()
+	sinceDescription = "Since parameter to changes feed"
+	since            = kingpin.Arg("since", sinceDescription).Int()
 )
 
 func init() {
@@ -27,7 +29,7 @@ func main() {
 	if err != nil {
 		logg.LogPanic("Error initializing todo lite app: %v", err)
 	}
-	go todoliteApp.FollowChangesFeed()
+	go todoliteApp.FollowChangesFeed(*since)
 	select {}
 
 }
