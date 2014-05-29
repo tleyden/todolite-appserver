@@ -65,7 +65,7 @@ func (t TodoLiteApp) processChanges(changes sgrepl.Changes) {
 		logg.LogTo("TODOLITE", "todo item: %+v", todoItem)
 
 		if todoItem.OcrDecoded != "" {
-			logg.LogTo("TODOLITE", "already ocr decoded, skipping")
+			logg.LogTo("TODOLITE", "%v already ocr decoded, skipping", change.Id)
 			continue
 		}
 
@@ -74,13 +74,13 @@ func (t TodoLiteApp) processChanges(changes sgrepl.Changes) {
 			logg.LogTo("TODOLITE", "todo item has no attachment, skipping")
 			continue
 		}
-		logg.LogTo("TODOLITE", "attachmentUrl: %v", attachmentUrl)
+		logg.LogTo("TODOLITE", "OCR Decoding: %v", attachmentUrl)
 
 		ocrDecoded, err := t.ocrDecode(attachmentUrl)
 		if err != nil {
 			errMsg := fmt.Errorf("OCR failed: %+v - %v", todoItem, err)
 			logg.LogError(errMsg)
-			continue
+			ocrDecoded = "failed"
 		}
 		err = t.updateTodoItemWithOcr(todoItem, ocrDecoded)
 		if err != nil {
