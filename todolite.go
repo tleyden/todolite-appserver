@@ -3,11 +3,12 @@ package todolite
 import (
 	"encoding/json"
 	"fmt"
+	"io"
+
 	"github.com/couchbaselabs/logg"
 	sgrepl "github.com/couchbaselabs/sg-replicate"
 	"github.com/tleyden/go-couch"
-	openocr "github.com/tleyden/open-ocr"
-	"io"
+	openocr "github.com/tleyden/open-ocr-client"
 )
 
 type TodoLiteApp struct {
@@ -32,7 +33,7 @@ func (t *TodoLiteApp) InitApp() error {
 	return nil
 }
 
-func (t TodoLiteApp) FollowChangesFeed() {
+func (t TodoLiteApp) FollowChangesFeed(since int) {
 
 	handleChange := func(reader io.Reader) int64 {
 		logg.LogTo("TODOLITE", "handleChange() callback called")
@@ -44,7 +45,7 @@ func (t TodoLiteApp) FollowChangesFeed() {
 		return int64(changes.LastSequence)
 	}
 
-	options := changes{"since": 0}
+	options := changes{"since": since}
 	options["feed"] = "longpoll"
 	t.Database.Changes(handleChange, options)
 
