@@ -3,7 +3,7 @@ package main
 import (
 	"github.com/alecthomas/kingpin"
 	"github.com/couchbaselabs/logg"
-	"github.com/couchbaselabs/todolite-appserver"
+	"github.com/tleyden/todolite-appserver"
 )
 
 // This follows the changes feed of the TodoLite sync gateway database and:
