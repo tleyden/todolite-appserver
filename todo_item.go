@@ -13,7 +13,7 @@ type TodoItem struct {
 	CreatedAt   string      `json:"created_at"`
 	ListId      string      `json:"list_id"`
 	Title       string      `json:"title"`
-	Type        string      `json:"task"`
+	Type        string      `json:"type"`
 	OcrDecoded  string      `json:"ocr_decoded"`
 	Attachments Attachments `json:"_attachments"`
 }
