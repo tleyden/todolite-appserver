@@ -55,6 +55,12 @@ func (t TodoLiteApp) processChanges(changes sgrepl.Changes) {
 
 	for _, change := range changes.Results {
 		logg.LogTo("TODOLITE", "change: %v", change)
+
+		if change.Deleted {
+			logg.LogTo("TODOLITE", "change was deleted, skipping")
+			continue
+		}
+
 		todoItem := TodoItem{}
 		err := t.Database.Retrieve(change.Id, &todoItem)
 		if err != nil {
