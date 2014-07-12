@@ -13,7 +13,7 @@ var (
 	urlDescription   = "Sync gateway url, with db name and no trailing slash"
 	url              = kingpin.Arg("url", urlDescription).String()
 	sinceDescription = "Since parameter to changes feed"
-	since            = kingpin.Arg("since", sinceDescription).Int()
+	since            = kingpin.Arg("since", sinceDescription).String()
 )
 
 func init() {

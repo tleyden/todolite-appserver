@@ -33,16 +33,17 @@ func (t *TodoLiteApp) InitApp() error {
 	return nil
 }
 
-func (t TodoLiteApp) FollowChangesFeed(since int) {
+func (t TodoLiteApp) FollowChangesFeed(since string) {
 
-	handleChange := func(reader io.Reader) int64 {
+	handleChange := func(reader io.Reader) string {
 		logg.LogTo("TODOLITE", "handleChange() callback called")
 		changes := decodeChanges(reader)
 		logg.LogTo("TODOLITE", "changes: %v", changes)
 
 		t.processChanges(changes)
 
-		return int64(changes.LastSequence)
+		return sgrepl.SequenceNumberToString(changes.LastSequence)
+
 	}
 
 	options := changes{"since": since}
