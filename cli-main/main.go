@@ -23,6 +23,10 @@ func init() {
 
 func main() {
 	kingpin.Parse()
+	if *url == "" {
+		kingpin.UsageErrorf("URL is empty")
+		return
+	}
 	logg.LogTo("CLI", "url: %v", *url)
 	todoliteApp := todolite.NewTodoLiteApp(*url)
 	err := todoliteApp.InitApp()
