@@ -32,16 +32,25 @@ func (t *TodoLiteApp) InitApp() error {
 	return nil
 }
 
-func (t TodoLiteApp) FollowChangesFeed(since string) {
+func (t TodoLiteApp) FollowChangesFeed(since interface{}) {
 
 	handleChange := func(reader io.Reader) interface{} {
 		logg.LogTo("TODOLITE", "handleChange() callback called")
-		changes := decodeChanges(reader)
-		logg.LogTo("TODOLITE", "changes: %v", changes)
+		changes, err := decodeChanges(reader)
+		if err == nil {
+			logg.LogTo("TODOLITE", "changes: %v", changes)
 
-		t.processChanges(changes)
+			t.processChanges(changes)
 
-		return changes.LastSequence
+			since = changes.LastSequence
+
+		} else {
+			logg.LogTo("TODOLITE", "error decoding changes: %v", err)
+
+		}
+
+		logg.LogTo("TODOLITE", "returning since: %v", since)
+		return since
 
 	}
 
@@ -117,11 +126,14 @@ func (t TodoLiteApp) updateTodoItemWithOcr(i TodoItem, ocrDecoded string) error 
 
 }
 
-func decodeChanges(reader io.Reader) (decodedChanges sgrepl.Changes) {
+func decodeChanges(reader io.Reader) (sgrepl.Changes, error) {
 
 	changes := sgrepl.Changes{}
 	decoder := json.NewDecoder(reader)
-	decoder.Decode(&changes)
-	return changes
+	err := decoder.Decode(&changes)
+	if err != nil {
+		logg.LogTo("TODOLITE", "Err decoding changes: %v", err)
+	}
+	return changes, err
 
 }
