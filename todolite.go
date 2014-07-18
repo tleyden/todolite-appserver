@@ -26,7 +26,6 @@ func (t *TodoLiteApp) InitApp() error {
 	db, err := couch.Connect(t.DatabaseURL)
 	if err != nil {
 		logg.LogPanic("Error connecting to db: %v", err)
-		// logg.LogError(err)
 		return err
 	}
 	t.Database = db
@@ -35,14 +34,14 @@ func (t *TodoLiteApp) InitApp() error {
 
 func (t TodoLiteApp) FollowChangesFeed(since string) {
 
-	handleChange := func(reader io.Reader) string {
+	handleChange := func(reader io.Reader) interface{} {
 		logg.LogTo("TODOLITE", "handleChange() callback called")
 		changes := decodeChanges(reader)
 		logg.LogTo("TODOLITE", "changes: %v", changes)
 
 		t.processChanges(changes)
 
-		return sgrepl.SequenceNumberToString(changes.LastSequence)
+		return changes.LastSequence
 
 	}
 
