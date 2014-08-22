@@ -1,11 +1,13 @@
 package todolite
 
 import (
+	"bufio"
 	"bytes"
+	"fmt"
 	"io"
-	"io/ioutil"
 	"mime/multipart"
 	"net/http"
+	"strings"
 
 	"github.com/couchbaselabs/logg"
 )
@@ -20,65 +22,81 @@ func init() {
 // and return the FileBin URL where it's stored.
 func copyUrlToFileBin(sourceUrl string) (string, error) {
 
-	fileBinUrl := "http://filebin.ca/upload.php"
+	requestGenerator := func() (*http.Request, error) {
 
-	// read bytes from attachment url
-	res, err := http.Get(sourceUrl)
+		fileBinUrl := "http://filebin.ca/upload.php"
+
+		// read bytes from attachment url
+		res, err := http.Get(sourceUrl)
+		if err != nil {
+			return nil, err
+		}
+
+		defer res.Body.Close()
+
+		body := &bytes.Buffer{}
+		writer := multipart.NewWriter(body)
+		writer.WriteField("key", "7dH67qRO07yxZc7k3BcgBLheeMIpXw3p") // api key
+		part, err := writer.CreateFormFile("file", "file.png")
+		if err != nil {
+			return nil, err
+		}
+
+		_, err = io.Copy(part, res.Body)
+		if err != nil {
+			return nil, err
+		}
+
+		err = writer.Close()
+		if err != nil {
+			return nil, err
+		}
+
+		request, err := http.NewRequest("POST", fileBinUrl, body)
+		if err != nil {
+			return nil, err
+		}
+
+		request.Header.Add("Content-Type", writer.FormDataContentType())
+		return request, nil
+	}
+
+	uploadToFileBinExtractUrl := func(request *http.Request) (string, error) {
+
+		client := &http.Client{}
+		uploadResponse, err := client.Do(request)
+		if err != nil {
+			return "", err
+		}
+
+		defer uploadResponse.Body.Close()
+
+		scanner := bufio.NewScanner(uploadResponse.Body)
+		for scanner.Scan() {
+			line := scanner.Text()
+			prefix := "url:"
+			if strings.HasPrefix(line, prefix) {
+				suffix := line[len(prefix):]
+				return suffix, nil
+			}
+		}
+
+		return "", fmt.Errorf("Did not find url in filebin response")
+
+	}
+
+	request, err := requestGenerator()
 	if err != nil {
 		return "", err
 	}
 
-	defer res.Body.Close()
-
-	//responseBody, err := ioutil.ReadAll(res.Body)
-	//if err != nil {
-	//	return nil, err
-	//}
-
-	body := &bytes.Buffer{}
-	writer := multipart.NewWriter(body)
-	part, err := writer.CreateFormFile("file", "file.png")
+	uploadedFileUrl, err := uploadToFileBinExtractUrl(request)
 	if err != nil {
 		return "", err
 	}
 
-	_, err = io.Copy(part, res.Body)
-	if err != nil {
-		return "", err
-	}
+	logg.LogTo("TODOLITE", "uploadedFileUrl: %s", uploadedFileUrl)
 
-	err = writer.Close()
-	if err != nil {
-		return "", err
-	}
-
-	request, err := http.NewRequest("POST", fileBinUrl, body)
-	if err != nil {
-		return "", err
-	}
-
-	request.Header.Add("Content-Type", writer.FormDataContentType())
-
-	client := &http.Client{}
-	uploadResponse, err := client.Do(request)
-
-	defer uploadResponse.Body.Close()
-
-	uploadResponseBody, err := ioutil.ReadAll(uploadResponse.Body)
-	if err != nil {
-		return "", err
-	}
-
-	logg.LogTo("TODOLITE", "uploadResponseBody: %s", uploadResponseBody)
-
-	// save to file
-
-	// post file to filebin (see http://matt.aimonetti.net/posts/2013/07/01/golang-multipart-file-upload-example/)
-
-	// read filebin from response
-
-	// return it
-
-	return sourceUrl, nil
+	return uploadedFileUrl, nil
 
 }
