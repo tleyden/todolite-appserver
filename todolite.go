@@ -60,6 +60,7 @@ func (t TodoLiteApp) FollowChangesFeed(since interface{}) {
 
 }
 
+// TODO: remove dependency on sgrepl.Changes and use go-couch.Changes instead
 func (t TodoLiteApp) processChanges(changes sgrepl.Changes) {
 
 	for _, change := range changes.Results {
@@ -91,7 +92,14 @@ func (t TodoLiteApp) processChanges(changes sgrepl.Changes) {
 		}
 		logg.LogTo("TODOLITE", "OCR Decoding: %v", attachmentUrl)
 
-		ocrDecoded, err := t.ocrDecode(attachmentUrl)
+		filebinAttachmentUrl, err := copyUrlToFileBin(attachmentUrl)
+		if err != nil {
+			errMsg := fmt.Errorf("FileBin upload failed: %+v - %v", todoItem, err)
+			logg.LogError(errMsg)
+			continue
+		}
+
+		ocrDecoded, err := t.ocrDecode(filebinAttachmentUrl)
 		if err != nil {
 			errMsg := fmt.Errorf("OCR failed: %+v - %v", todoItem, err)
 			logg.LogError(errMsg)
