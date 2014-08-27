@@ -7,7 +7,6 @@ import (
 	"net/http"
 
 	"github.com/couchbaselabs/logg"
-	sgrepl "github.com/couchbaselabs/sg-replicate"
 	"github.com/tleyden/go-couch"
 	openocr "github.com/tleyden/open-ocr-client"
 )
@@ -63,8 +62,7 @@ func (t TodoLiteApp) FollowChangesFeed(since interface{}) {
 
 }
 
-// TODO: remove dependency on sgrepl.Changes and use go-couch.Changes instead
-func (t TodoLiteApp) processChanges(changes sgrepl.Changes) {
+func (t TodoLiteApp) processChanges(changes couch.Changes) {
 
 	for _, change := range changes.Results {
 		logg.LogTo("TODOLITE", "change: %v", change)
@@ -144,9 +142,9 @@ func (t TodoLiteApp) updateTodoItemWithOcr(i TodoItem, ocrDecoded string) error 
 
 }
 
-func decodeChanges(reader io.Reader) (sgrepl.Changes, error) {
+func decodeChanges(reader io.Reader) (couch.Changes, error) {
 
-	changes := sgrepl.Changes{}
+	changes := couch.Changes{}
 	decoder := json.NewDecoder(reader)
 	err := decoder.Decode(&changes)
 	if err != nil {
