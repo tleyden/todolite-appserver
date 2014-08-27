@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net/http"
 
 	"github.com/couchbaselabs/logg"
 	sgrepl "github.com/couchbaselabs/sg-replicate"
@@ -13,12 +14,14 @@ import (
 
 type TodoLiteApp struct {
 	DatabaseURL string
+	OpenOCRURL  string
 	Database    couch.Database
 }
 
-func NewTodoLiteApp(DatabaseURL string) *TodoLiteApp {
+func NewTodoLiteApp(DatabaseURL, openOCRURL string) *TodoLiteApp {
 	return &TodoLiteApp{
 		DatabaseURL: DatabaseURL,
+		OpenOCRURL:  openOCRURL,
 	}
 }
 
@@ -80,7 +83,7 @@ func (t TodoLiteApp) processChanges(changes sgrepl.Changes) {
 		}
 		logg.LogTo("TODOLITE", "todo item: %+v", todoItem)
 
-		if todoItem.OcrDecoded != "" {
+		if todoItem.OcrDecoded != "" && todoItem.OcrDecoded != "failed" {
 			logg.LogTo("TODOLITE", "%v already ocr decoded, skipping", change.Id)
 			continue
 		}
@@ -92,14 +95,7 @@ func (t TodoLiteApp) processChanges(changes sgrepl.Changes) {
 		}
 		logg.LogTo("TODOLITE", "OCR Decoding: %v", attachmentUrl)
 
-		filebinAttachmentUrl, err := copyUrlToFileBin(attachmentUrl)
-		if err != nil {
-			errMsg := fmt.Errorf("FileBin upload failed: %+v - %v", todoItem, err)
-			logg.LogError(errMsg)
-			continue
-		}
-
-		ocrDecoded, err := t.ocrDecode(filebinAttachmentUrl)
+		ocrDecoded, err := t.ocrDecode(attachmentUrl)
 		if err != nil {
 			errMsg := fmt.Errorf("OCR failed: %+v - %v", todoItem, err)
 			logg.LogError(errMsg)
@@ -116,10 +112,24 @@ func (t TodoLiteApp) processChanges(changes sgrepl.Changes) {
 
 }
 
-func (t TodoLiteApp) ocrDecode(attachmentUrl string) (ocrDecoded string, err error) {
-	openOcrUrl := "http://api.openocr.net"
-	openOcrClient := openocr.NewHttpClient(openOcrUrl)
-	ocrDecoded, err = openOcrClient.DecodeImageUrl(attachmentUrl, openocr.ENGINE_TESSERACT)
+func (t TodoLiteApp) ocrDecode(attachmentUrl string) (string, error) {
+
+	openOcrClient := openocr.NewHttpClient(t.OpenOCRURL)
+
+	res, err := http.Get(attachmentUrl)
+	if err != nil {
+		errMsg := fmt.Errorf("Unable to open reader for %s: %s", attachmentUrl, err)
+		logg.LogError(errMsg)
+		return "", errMsg
+	}
+	defer res.Body.Close()
+
+	ocrRequest := openocr.OcrRequest{
+		EngineType: openocr.ENGINE_TESSERACT,
+	}
+
+	ocrDecoded, err := openOcrClient.DecodeImageReader(res.Body, ocrRequest)
+
 	if err != nil {
 		return "", err
 	}

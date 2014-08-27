@@ -10,10 +10,12 @@ import (
 // When a new image is uploaded, it runs it through OCR and saves the decoded text into the JSON
 
 var (
-	urlDescription   = "Sync gateway url, with db name and no trailing slash"
-	url              = kingpin.Arg("url", urlDescription).String()
-	sinceDescription = "Since parameter to changes feed"
-	since            = kingpin.Arg("since", sinceDescription).String()
+	urlDescription        = "Sync gateway url, with db name and no trailing slash"
+	url                   = kingpin.Arg("url", urlDescription).Required().String()
+	openOcrUrlDescription = "OpenOCR API root url, eg http://api.openocr.net"
+	openOcrUrl            = kingpin.Arg("openOcrUrl", openOcrUrlDescription).Required().String()
+	sinceDescription      = "Since parameter to changes feed"
+	since                 = kingpin.Arg("since", sinceDescription).String()
 )
 
 func init() {
@@ -27,8 +29,13 @@ func main() {
 		kingpin.UsageErrorf("URL is empty")
 		return
 	}
-	logg.LogTo("CLI", "url: %v", *url)
-	todoliteApp := todolite.NewTodoLiteApp(*url)
+	if *openOcrUrl == "" {
+		kingpin.UsageErrorf("OpenOcr URL is empty")
+		return
+	}
+
+	logg.LogTo("CLI", "url: %v openOcrUrl: %v", *url, *openOcrUrl)
+	todoliteApp := todolite.NewTodoLiteApp(*url, *openOcrUrl)
 	err := todoliteApp.InitApp()
 	if err != nil {
 		logg.LogPanic("Error initializing todo lite app: %v", err)
