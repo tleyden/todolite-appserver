@@ -83,7 +83,7 @@ func (t TodoLiteApp) processChanges(changes sgrepl.Changes) {
 		}
 		logg.LogTo("TODOLITE", "todo item: %+v", todoItem)
 
-		if todoItem.OcrDecoded != "" && todoItem.OcrDecoded != "failed" {
+		if todoItem.OcrDecoded != "" {
 			logg.LogTo("TODOLITE", "%v already ocr decoded, skipping", change.Id)
 			continue
 		}
