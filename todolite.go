@@ -1,10 +1,13 @@
 package todolite
 
 import (
+	"bufio"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
+	"os"
+	"strings"
 
 	"github.com/couchbaselabs/logg"
 	"github.com/tleyden/go-couch"
@@ -48,31 +51,93 @@ func (t TodoLiteApp) FollowChangesFeed(startingSince string) {
 
 		t.processChanges(changes)
 
-		since := changes.LastSequence
-		logg.LogTo("TODOLITE", "returning since: %v", since)
+		sinceStr := fmt.Sprintf("%v", changes.LastSequence)
 
-		return since
+		t.saveLastProcessedSeq(sinceStr)
+
+		logg.LogTo("TODOLITE", "returning since: %v", changes.LastSequence)
+
+		return changes.LastSequence
 
 	}
 
 	options := changes{}
-	if startingSince != "" {
-		logg.LogTo("TODOLITE", "startingSince not empty: %v", startingSince)
-		options["since"] = startingSince
-	} else {
-		// find the sequence of most recent change
-		lastSequence, err := t.Database.LastSequence()
-		if err != nil {
-			logg.LogPanic("Error getting LastSequence: %v", err)
-			return
-		}
-		options["since"] = lastSequence
-	}
+	options["since"] = t.determineStartingSince(startingSince)
 
 	options["feed"] = "longpoll"
 	logg.LogTo("TODOLITE", "Following changes feed: %+v", options)
 	t.Database.Changes(handleChange, options)
 
+}
+
+// the startingSince param will override any last processed sequence
+// we have stored.  if empty, use the stored last processed sequence.
+// if _that's_ empty too, then fast forward to end of _changes feed
+func (t TodoLiteApp) determineStartingSince(startingSince string) interface{} {
+
+	if startingSince != "" {
+		// if we have been passed a starting since, use it
+		logg.LogTo("TODOLITE", "Using startingSince param: %v", startingSince)
+		return startingSince
+	} else {
+		// otherwise try to get the stored last processed sequence
+		lastProcessedSeq, err := t.lastProcessedSeq()
+		if err == nil {
+			logg.LogTo("TODOLITE", "Using saved last seq: %v", lastProcessedSeq)
+			return lastProcessedSeq
+		} else {
+			logg.LogTo("TODOLITE", "Error getting stored last seq: %v", err)
+
+			// if that's empty, find the sequence of most recent change
+			lastSequence, err := t.Database.LastSequence()
+			if err != nil {
+				logg.LogPanic("Error getting LastSequence: %v", err)
+			}
+			logg.LogTo("TODOLITE", "Using end of changes feed: %v", lastSequence)
+			return lastSequence
+		}
+
+	}
+
+}
+
+func (t TodoLiteApp) lastProcessedSeq() (string, error) {
+
+	infile, err := os.Open("lastprocessed.db")
+	if err != nil {
+		logg.LogTo("TODOLITE", "could not open lastprocessed.db file for reading")
+		return "", err
+	}
+	defer infile.Close()
+	reader := bufio.NewReader(infile)
+	line, err := reader.ReadString('\n')
+	if err != nil {
+		logg.LogTo("TODOLITE", "could not read from lastprocessed.db file")
+		return "", err
+	}
+	return strings.TrimSpace(line), nil
+
+}
+
+func (t TodoLiteApp) saveLastProcessedSeq(seq string) (err error) {
+	outfile, err := os.Create("lastprocessed.db")
+	if err != nil {
+		logg.LogTo("TODOLITE", "could not open lastprocessed.db file")
+		return nil
+	}
+	defer outfile.Close()
+
+	writer := bufio.NewWriter(outfile)
+	defer func() {
+		if err == nil {
+			err = writer.Flush()
+		}
+	}()
+	seqWithNewline := fmt.Sprintf("%s\n", seq)
+	if _, err = writer.WriteString(seqWithNewline); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (t TodoLiteApp) processChanges(changes couch.Changes) {
