@@ -34,30 +34,43 @@ func (t *TodoLiteApp) InitApp() error {
 	return nil
 }
 
-func (t TodoLiteApp) FollowChangesFeed(since interface{}) {
+func (t TodoLiteApp) FollowChangesFeed(startingSince string) {
 
 	handleChange := func(reader io.Reader) interface{} {
 		logg.LogTo("TODOLITE", "handleChange() callback called")
 		changes, err := decodeChanges(reader)
-		if err == nil {
-			logg.LogTo("TODOLITE", "changes: %v", changes)
-
-			t.processChanges(changes)
-
-			since = changes.LastSequence
-
-		} else {
+		if err != nil {
 			logg.LogTo("TODOLITE", "error decoding changes: %v", err)
-
+			return nil // stop changes feed
 		}
 
+		logg.LogTo("TODOLITE", "changes: %v", changes)
+
+		t.processChanges(changes)
+
+		since := changes.LastSequence
 		logg.LogTo("TODOLITE", "returning since: %v", since)
+
 		return since
 
 	}
 
-	options := changes{"since": since}
+	options := changes{}
+	if startingSince != "" {
+		logg.LogTo("TODOLITE", "startingSince not empty: %v", startingSince)
+		options["since"] = startingSince
+	} else {
+		// find the sequence of most recent change
+		lastSequence, err := t.Database.LastSequence()
+		if err != nil {
+			logg.LogPanic("Error getting LastSequence: %v", err)
+			return
+		}
+		options["since"] = lastSequence
+	}
+
 	options["feed"] = "longpoll"
+	logg.LogTo("TODOLITE", "Following changes feed: %+v", options)
 	t.Database.Changes(handleChange, options)
 
 }
