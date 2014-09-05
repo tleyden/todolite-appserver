@@ -39,12 +39,17 @@ func (t *TodoLiteApp) InitApp() error {
 
 func (t TodoLiteApp) FollowChangesFeed(startingSince string) {
 
+	var since interface{}
+
 	handleChange := func(reader io.Reader) interface{} {
 		logg.LogTo("TODOLITE", "handleChange() callback called")
 		changes, err := decodeChanges(reader)
 		if err != nil {
-			logg.LogTo("TODOLITE", "error decoding changes: %v", err)
-			return nil // stop changes feed
+			// it's very common for this to timeout while waiting for new changes.
+			// since we want to follow the changes feed forever, just log an error
+			// TODO: don't even log an error if its an io.Timeout, just noise
+			logg.LogTo("OFFICERADAR", "%T decoding changes: %v.", err, err)
+			return since
 		}
 
 		logg.LogTo("TODOLITE", "changes: %v", changes)
@@ -62,7 +67,8 @@ func (t TodoLiteApp) FollowChangesFeed(startingSince string) {
 	}
 
 	options := changes{}
-	options["since"] = t.determineStartingSince(startingSince)
+	since = t.determineStartingSince(startingSince)
+	options["since"] = since
 
 	options["feed"] = "longpoll"
 	logg.LogTo("TODOLITE", "Following changes feed: %+v", options)
@@ -177,6 +183,7 @@ func (t TodoLiteApp) processChanges(changes couch.Changes) {
 			logg.LogError(errMsg)
 			ocrDecoded = "failed"
 		}
+		logg.LogTo("TODOLITE", "OCR Decode result: %v", ocrDecoded)
 		err = t.updateTodoItemWithOcr(todoItem, ocrDecoded)
 		if err != nil {
 			errMsg := fmt.Errorf("Update failed: %+v - %v", todoItem, err)
