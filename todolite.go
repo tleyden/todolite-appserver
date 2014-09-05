@@ -60,9 +60,10 @@ func (t TodoLiteApp) FollowChangesFeed(startingSince string) {
 
 		t.saveLastProcessedSeq(sinceStr)
 
-		logg.LogTo("TODOLITE", "returning since: %v", changes.LastSequence)
+		since = changes.LastSequence
+		logg.LogTo("TODOLITE", "returning since: %v", since)
 
-		return changes.LastSequence
+		return since
 
 	}
 
