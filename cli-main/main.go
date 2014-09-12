@@ -1,6 +1,12 @@
 package main
 
 import (
+	"log"
+	"net/http"
+	"net/http/httputil"
+	"net/url"
+	"strings"
+
 	"github.com/alecthomas/kingpin"
 	"github.com/couchbaselabs/logg"
 	"github.com/tleyden/todolite-appserver"
@@ -11,7 +17,7 @@ import (
 
 var (
 	urlDescription        = "Sync gateway url, with db name and no trailing slash"
-	url                   = kingpin.Arg("url", urlDescription).Required().String()
+	sgUrl                 = kingpin.Arg("sgUrl", urlDescription).Required().String()
 	openOcrUrlDescription = "OpenOCR API root url, eg http://api.openocr.net"
 	openOcrUrl            = kingpin.Arg("openOcrUrl", openOcrUrlDescription).Required().String()
 	sinceDescription      = "Since parameter to changes feed"
@@ -24,9 +30,10 @@ func init() {
 }
 
 func main() {
+
 	kingpin.Parse()
-	if *url == "" {
-		kingpin.UsageErrorf("URL is empty")
+	if *sgUrl == "" {
+		kingpin.UsageErrorf("SG URL is empty")
 		return
 	}
 	if *openOcrUrl == "" {
@@ -34,13 +41,71 @@ func main() {
 		return
 	}
 
-	logg.LogTo("CLI", "url: %v openOcrUrl: %v", *url, *openOcrUrl)
-	todoliteApp := todolite.NewTodoLiteApp(*url, *openOcrUrl)
+	logg.LogTo("CLI", "sgRrl: %v openOcrUrl: %v", *sgUrl, *openOcrUrl)
+	todoliteApp := todolite.NewTodoLiteApp(*sgUrl, *openOcrUrl)
 	err := todoliteApp.InitApp()
 	if err != nil {
 		logg.LogPanic("Error initializing todo lite app: %v", err)
 	}
 	go todoliteApp.FollowChangesFeed(*since)
-	select {}
+
+	// start a reverse proxy
+	target := &url.URL{Scheme: "http", Host: "localhost:4985", Path: "/"}
+
+	// proxy := httputil.NewSingleHostReverseProxy(target)
+	targetQuery := target.RawQuery
+	director := func(req *http.Request) {
+		req.URL.Scheme = target.Scheme
+		req.URL.Host = target.Host
+		req.URL.Path = singleJoiningSlash(target.Path, req.URL.Path)
+		logg.LogTo("CLI", "path: %s", req.URL.Path)
+
+		if !isRequestAllowed(req) {
+			logg.LogTo("CLI", "forbideen url, redirect to google")
+			req.URL.Host = "google.com"
+		}
+
+		if targetQuery == "" || req.URL.RawQuery == "" {
+			req.URL.RawQuery = targetQuery + req.URL.RawQuery
+		} else {
+			req.URL.RawQuery = targetQuery + "&" + req.URL.RawQuery
+		}
+	}
+	proxy := &httputil.ReverseProxy{Director: director}
+
+	err = http.ListenAndServe(":8081", proxy)
+	if err != nil {
+		log.Fatal("ListenAndServe: ", err)
+	}
+
+}
+
+func createReverseProxyDirector() httputil.Director {
+
+}
+
+func singleJoiningSlash(a, b string) string {
+	aslash := strings.HasSuffix(a, "/")
+	bslash := strings.HasPrefix(b, "/")
+	switch {
+	case aslash && bslash:
+		return a + b[1:]
+	case !aslash && !bslash:
+		return a + "/" + b
+	}
+	return a + b
+}
+
+func isRequestAllowed(req *http.Request) bool {
+
+	if !strings.HasPrefix(req.URL.Path, "/todolite/_user") {
+		return false
+	}
+
+	if req.Method != "POST" {
+		return false
+	}
+
+	return true
 
 }
