@@ -34,6 +34,20 @@ func (t *TodoLiteApp) InitApp() error {
 		return err
 	}
 	t.Database = db
+
+	// verify we can connect to openocr
+	resp, err := http.Get(t.OpenOCRURL)
+	if err != nil {
+		logg.LogPanic("Error connecting to openocr api: %v", err)
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != 200 {
+		logg.LogPanic("Error connecting to openocr api.  resp: %v", resp.StatusCode)
+		return nil
+	}
+
 	return nil
 }
 
