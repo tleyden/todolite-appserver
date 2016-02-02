@@ -30,7 +30,7 @@ func NewTodoLiteApp(DatabaseURL, openOCRURL string) *TodoLiteApp {
 func (t *TodoLiteApp) InitApp() error {
 	db, err := couch.Connect(t.DatabaseURL)
 	if err != nil {
-		logg.LogPanic("Error connecting to db: %v", err)
+		logg.LogPanic("Error connecting to db: %v.  Err: %v", t.DatabaseURL, err)
 		return err
 	}
 	t.Database = db
