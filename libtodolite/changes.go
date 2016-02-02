@@ -16,13 +16,13 @@ type TodoliteChanges struct {
 }
 
 type TodoliteChange struct {
-	Sequence        interface{}        `json:"seq"`
-	Id              string             `json:"id"`
-	ChangedRevs     []couch.ChangedRev `json:"changes"`
-	Deleted         bool               `json:"deleted"`
-	ObjectType      string
-	ObjectName      string
-	ObjectContainer string
+	Sequence    interface{}        `json:"seq"`
+	Id          string             `json:"id"`
+	ChangedRevs []couch.ChangedRev `json:"changes"`
+	Deleted     bool               `json:"deleted"`
+	Type        string
+	Title       string
+	Parent      string // The parent list, or N/A
 }
 
 func NewTodoLiteChange(database couch.Database, change couch.Change) *TodoliteChange {
@@ -42,25 +42,25 @@ func NewTodoLiteChange(database couch.Database, change couch.Change) *TodoliteCh
 			logg.LogError(errMsg)
 			return &todoliteChange
 		}
-		todoliteChange.ObjectType = todoItem.Type
+		todoliteChange.Type = todoItem.Type
 		switch todoItem.Type {
 		case "task":
-			todoliteChange.ObjectName = todoItem.Title
+			todoliteChange.Title = todoItem.Title
 			listItem := TodoItem{}
 			err := database.Retrieve(todoItem.ListId, &listItem)
 			if err != nil {
 				errMsg := fmt.Errorf("Didn't retrieve list: %v Err: %v", todoItem.ListId, err)
 				logg.LogError(errMsg)
-				todoliteChange.ObjectContainer = todoItem.ListId
+				todoliteChange.Parent = todoItem.ListId
 			}
-			todoliteChange.ObjectContainer = listItem.Title
+			todoliteChange.Parent = listItem.Title
 
 		case "list":
-			todoliteChange.ObjectName = todoItem.Title
-			todoliteChange.ObjectContainer = todoItem.Title
+			todoliteChange.Title = todoItem.Title
+			todoliteChange.Parent = "N/A"
 		case "profile":
-			todoliteChange.ObjectName = todoItem.Id
-			todoliteChange.ObjectContainer = "users"
+			todoliteChange.Title = todoItem.Id
+			todoliteChange.Parent = "N/A"
 		}
 
 		log.Printf("todoItem: %+v", todoItem)
