@@ -5,6 +5,8 @@ import (
 	"log"
 	"net/http"
 
+	"html/template"
+
 	"github.com/gocraft/web"
 	"github.com/tleyden/go-couch"
 )
@@ -35,6 +37,8 @@ func (c *Context) Root(rw web.ResponseWriter, req *web.Request) {
 
 func (c *Context) ChangesFeed(rw web.ResponseWriter, req *web.Request) {
 
+	rw.Header().Set("Content-Type", "text/html")
+
 	// get the changes feed
 	changesOptions := map[string]interface{}{}
 	changes, err := c.Database.GetChanges(changesOptions)
@@ -55,7 +59,18 @@ func (c *Context) ChangesFeed(rw web.ResponseWriter, req *web.Request) {
 	// pass to a template to render
 	log.Printf("todolite changes: %+v", todoChanges)
 
-	fmt.Fprint(rw, "Changes")
+	t := template.New("Changes template")
+	t, err = t.Parse(changesTemplate)
+	if err != nil {
+		http.Error(rw, err.Error(), 500)
+		return
+	}
+
+	err = t.Execute(rw, todoChanges)
+	if err != nil {
+		http.Error(rw, err.Error(), 500)
+		return
+	}
 
 }
 
