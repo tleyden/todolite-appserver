@@ -44,7 +44,32 @@ func (c *Context) ChangesFeed(rw web.ResponseWriter, req *web.Request) {
 	}
 	log.Printf("changes: %v", changes)
 
+	// convert raw changes to a slice of todo lite changes
+	// object type (user/list/task) | id | is_delete | name | container
+	// user                         | 1  | false       foo    n/a
+	// list                         | 2  | false       hey    self
+	// task                         | 3  | false       lol    hey
+
+	todoChanges := c.todoliteChanges(changes)
+
 	// pass to a template to render
+	log.Printf("todolite changes: %+v", todoChanges)
 
 	fmt.Fprint(rw, "Changes")
+
+}
+
+func (c *Context) todoliteChanges(changes couch.Changes) TodoliteChanges {
+
+	todoliteChanges := TodoliteChanges{}
+	todoliteChanges.LastSequence = changes.LastSequence
+
+	for _, change := range changes.Results {
+		todoliteChange := NewTodoLiteChange(*c.Database, change)
+		log.Printf("todolite change: %+v", todoliteChange)
+		todoliteChanges.Changes = append(todoliteChanges.Changes, *todoliteChange)
+	}
+
+	return todoliteChanges
+
 }
