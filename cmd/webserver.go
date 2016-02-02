@@ -2,8 +2,11 @@ package cmd
 
 import (
 	"fmt"
+	"net/http"
 
+	"github.com/gocraft/web"
 	"github.com/spf13/cobra"
+	"github.com/tleyden/todolite-appserver/libtodolite"
 )
 
 // webserverCmd respresents the webserver command
@@ -14,6 +17,13 @@ var webserverCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		// TODO: Work your own magic here
 		fmt.Println("webserver called")
+
+		router := web.New(libtodolite.Context{}).
+			Middleware(web.LoggerMiddleware).                 // Use some included middleware
+			Middleware(web.ShowErrorsMiddleware).             // ...
+			Middleware((*libtodolite.Context).SetHelloCount). // Your own middleware!
+			Get("/", (*libtodolite.Context).SayHello)         // Add a route
+		http.ListenAndServe("localhost:3000", router) // Start the server!
 
 	},
 }
