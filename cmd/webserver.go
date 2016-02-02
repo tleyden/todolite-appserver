@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/gocraft/web"
@@ -15,14 +14,13 @@ var webserverCmd = &cobra.Command{
 	Short: "Runs a webserver that displays data from TodoLite DB on Sync Gateway",
 	Long:  `This connects to the admin port (4985) on Sync Gateway and exposes a web UI to dump data which is useful for debugging.  `,
 	Run: func(cmd *cobra.Command, args []string) {
-		// TODO: Work your own magic here
-		fmt.Println("webserver called")
 
 		router := web.New(libtodolite.Context{}).
-			Middleware(web.LoggerMiddleware).                 // Use some included middleware
-			Middleware(web.ShowErrorsMiddleware).             // ...
-			Middleware((*libtodolite.Context).SetHelloCount). // Your own middleware!
-			Get("/", (*libtodolite.Context).SayHello)         // Add a route
+			Middleware(web.LoggerMiddleware).     // Use some included middleware
+			Middleware(web.ShowErrorsMiddleware). // ...
+			Middleware((*libtodolite.Context).ConnectToSyncGw).
+			Get("/", (*libtodolite.Context).Root).
+			Get("/changes", (*libtodolite.Context).ChangesFeed)
 		http.ListenAndServe("localhost:3000", router) // Start the server!
 
 	},
