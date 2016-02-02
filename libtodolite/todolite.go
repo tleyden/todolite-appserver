@@ -1,4 +1,4 @@
-package todolite
+package libtodolite
 
 import (
 	"bufio"

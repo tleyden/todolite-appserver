@@ -1,3 +1,3 @@
-package todolite
+package libtodolite
 
 type changes map[string]interface{}
