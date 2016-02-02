@@ -2,6 +2,7 @@ package libtodolite
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 
 	"github.com/gocraft/web"
@@ -34,9 +35,14 @@ func (c *Context) Root(rw web.ResponseWriter, req *web.Request) {
 
 func (c *Context) ChangesFeed(rw web.ResponseWriter, req *web.Request) {
 
-	// connect to sync gateway admin port
-
 	// get the changes feed
+	changesOptions := map[string]interface{}{}
+	changes, err := c.Database.GetChanges(changesOptions)
+	if err != nil {
+		http.Error(rw, err.Error(), 500)
+		return
+	}
+	log.Printf("changes: %v", changes)
 
 	// pass to a template to render
 
