@@ -21,7 +21,7 @@ var webserverCmd = &cobra.Command{
 			Middleware((*libtodolite.Context).ConnectToSyncGw).
 			Get("/", (*libtodolite.Context).Root).
 			Get("/changes", (*libtodolite.Context).ChangesFeed)
-		http.ListenAndServe("localhost:3000", router) // Start the server!
+		http.ListenAndServe(":3000", router) // Start the server!
 
 	},
 }
