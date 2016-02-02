@@ -17,7 +17,7 @@ type Context struct {
 
 func (c *Context) ConnectToSyncGw(rw web.ResponseWriter, req *web.Request, next web.NextMiddlewareFunc) {
 	// if the sync gateway db connection is nil, then connect
-	dbUrl := "http://localhost:4985/todolite"
+	dbUrl := "http://localhost:4985/todolite12rc2b-cc"
 
 	if c.Database == nil {
 		db, err := couch.Connect(dbUrl)
