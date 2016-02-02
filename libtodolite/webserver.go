@@ -12,20 +12,22 @@ import (
 )
 
 type Context struct {
-	Database *couch.Database
+	Database    *couch.Database
+	DatabaseURL string
 }
 
 func (c *Context) ConnectToSyncGw(rw web.ResponseWriter, req *web.Request, next web.NextMiddlewareFunc) {
-	// if the sync gateway db connection is nil, then connect
-	dbUrl := "http://localhost:4985/todolite12rc2b-cc"
 
 	if c.Database == nil {
-		db, err := couch.Connect(dbUrl)
+		log.Printf("Connecting to Sync Gateway: %v", c.DatabaseURL)
+		db, err := couch.Connect(c.DatabaseURL)
 		if err != nil {
 			http.Error(rw, err.Error(), 500)
 			return
 		}
 		c.Database = &db
+	} else {
+		log.Printf("Already connected to Sync Gateway: %v", c.DatabaseURL)
 	}
 
 	next(rw, req)
@@ -46,18 +48,8 @@ func (c *Context) ChangesFeed(rw web.ResponseWriter, req *web.Request) {
 		http.Error(rw, err.Error(), 500)
 		return
 	}
-	log.Printf("changes: %v", changes)
-
-	// convert raw changes to a slice of todo lite changes
-	// object type (user/list/task) | id | is_delete | name | container
-	// user                         | 1  | false       foo    n/a
-	// list                         | 2  | false       hey    self
-	// task                         | 3  | false       lol    hey
 
 	todoChanges := c.todoliteChanges(changes)
-
-	// pass to a template to render
-	log.Printf("todolite changes: %+v", todoChanges)
 
 	t := template.New("Changes template")
 	t, err = t.Parse(changesTemplate)
@@ -81,10 +73,16 @@ func (c *Context) todoliteChanges(changes couch.Changes) TodoliteChanges {
 
 	for _, change := range changes.Results {
 		todoliteChange := NewTodoLiteChange(*c.Database, change)
-		log.Printf("todolite change: %+v", todoliteChange)
 		todoliteChanges.Changes = append(todoliteChanges.Changes, *todoliteChange)
 	}
 
 	return todoliteChanges
 
+}
+
+func ConfigMiddleware(databaseURL string) func(*Context, web.ResponseWriter, *web.Request, web.NextMiddlewareFunc) {
+	return func(c *Context, rw web.ResponseWriter, req *web.Request, next web.NextMiddlewareFunc) {
+		c.DatabaseURL = databaseURL
+		next(rw, req)
+	}
 }
