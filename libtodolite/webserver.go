@@ -51,7 +51,18 @@ func (c *Context) ChangesFeed(rw web.ResponseWriter, req *web.Request) {
 
 	todoChanges := c.todoliteChanges(changes)
 
+	maxChars := 50
+	funcMap := template.FuncMap{
+		"Truncate": func(s string) string {
+			if len(s) >= maxChars {
+				return fmt.Sprintf("%s ...", s[:maxChars])
+			}
+			return s
+		},
+	}
+
 	t := template.New("Changes template")
+	t.Funcs(funcMap)
 	t, err = t.Parse(changesTemplate)
 	if err != nil {
 		http.Error(rw, err.Error(), 500)

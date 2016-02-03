@@ -36,9 +36,9 @@ const changesTemplate = `<h2>Changes up to sequence: {{.LastSequence}}</h2>
         <td>{{.Type}}</td>
         <td>{{.Id}}</td>
         <td>{{.Deleted}}</td>
-        <td>{{.Title}}</td>
-        <td>{{.Parent}}</td>
-        <td>{{.ChangedRevs}}</td>
+        <td>{{.Title | Truncate }}</td>
+        <td>{{.Parent | Truncate }}</td>
+        <td>{{.ChangedRevs }}</td>
         </tr>
     {{end}}
 {{end}}
