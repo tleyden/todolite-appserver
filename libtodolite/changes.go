@@ -2,7 +2,6 @@ package libtodolite
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/couchbaselabs/logg"
 	"github.com/tleyden/go-couch"
@@ -63,7 +62,6 @@ func NewTodoLiteChange(database couch.Database, change couch.Change) *TodoliteCh
 			todoliteChange.Parent = "N/A"
 		}
 
-		log.Printf("todoItem: %+v", todoItem)
 	}
 
 	return &todoliteChange
