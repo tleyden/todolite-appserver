@@ -152,6 +152,9 @@ func (c *Context) sendPushNotification(i TodoItem, l TodoList) error {
 
 	for _, member := range l.Members {
 		log.Printf("Send notification to %v", member)
+		m := TodoProfile{}
+		_ = c.Database.Retrieve(member, &m)
+		log.Printf("Member: %+v", m)
 
 	}
 

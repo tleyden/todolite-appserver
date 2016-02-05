@@ -36,6 +36,16 @@ type TodoList struct {
 	Members   []string `json:"members"`
 }
 
+type TodoProfile struct {
+	Revision    string `json:"_rev"`
+	Id          string `json:"_id"`
+	Type        string `json:"type"`
+	FacebookId  string `json:"id"`
+	UserId      string `json:"user_id"`
+	Name        string `json:"name"`
+	AccessToken string `json:"access_token"`
+}
+
 func (t TodoItem) AttachmentUrl(dbUrl string) string {
 
 	attachmentUrl := ""
