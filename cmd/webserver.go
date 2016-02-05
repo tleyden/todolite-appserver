@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 
@@ -20,14 +21,19 @@ var webserverCmd = &cobra.Command{
 			return
 		}
 
+		port := 3000
+
 		router := web.New(libtodolite.Context{}).
 			Middleware(web.LoggerMiddleware).     // Use some included middleware
 			Middleware(web.ShowErrorsMiddleware). // ...
 			Middleware(libtodolite.ConfigMiddleware(*url)).
 			Middleware((*libtodolite.Context).ConnectToSyncGw).
 			Get("/", (*libtodolite.Context).Root).
-			Get("/changes", (*libtodolite.Context).ChangesFeed)
-		http.ListenAndServe(":3000", router) // Start the server!
+			Get("/changes", (*libtodolite.Context).ChangesFeed).
+			Post("/webhook_receiver", (*libtodolite.Context).WebhookReceiver)
+
+		log.Printf("Listening on port %v", port)
+		http.ListenAndServe(fmt.Sprintf(":%v", port), router) // Start the server!
 
 	},
 }

@@ -62,7 +62,7 @@ func (t TodoLiteApp) FollowChangesFeed(startingSince string) {
 			// it's very common for this to timeout while waiting for new changes.
 			// since we want to follow the changes feed forever, just log an error
 			// TODO: don't even log an error if its an io.Timeout, just noise
-			logg.LogTo("OFFICERADAR", "%T decoding changes: %v.", err, err)
+			logg.LogTo("TODOLITE", "%T decoding changes: %v.", err, err)
 			return since
 		}
 

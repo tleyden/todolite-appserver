@@ -1,6 +1,7 @@
 package libtodolite
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -89,6 +90,72 @@ func (c *Context) todoliteChanges(changes couch.Changes) TodoliteChanges {
 
 	return todoliteChanges
 
+}
+
+func (c *Context) WebhookReceiver(rw web.ResponseWriter, req *web.Request) {
+	fmt.Println("/webhook_receiver POST request received")
+
+	defer req.Body.Close()
+
+	decoder := json.NewDecoder(req.Body)
+
+	todoItem := TodoItem{}
+	err := decoder.Decode(&todoItem)
+	if err != nil {
+		log.Printf("Error decoding POST body into a TodoItem, err: %v", err)
+		http.Error(rw, err.Error(), 500)
+		return
+	}
+
+	log.Printf("TodoItem: %+v", todoItem)
+	if todoItem.Type != Task {
+		log.Printf("Ignoring %+v since it's not a task", todoItem)
+		fmt.Fprintf(rw, "Ignoring item")
+		return
+	}
+
+	listItem, err := c.findList(todoItem)
+	if err != nil {
+		log.Printf("Error looking up list for TodoItem: %v, err: %v", todoItem, err)
+		http.Error(rw, err.Error(), 500)
+		return
+	}
+	log.Printf("list: %+v", listItem)
+
+	err = c.sendPushNotification(todoItem, listItem)
+	if err != nil {
+		log.Printf("Error sending notifications for list: %v, err: %v", listItem, err)
+		http.Error(rw, err.Error(), 500)
+		return
+	}
+
+	fmt.Fprintf(rw, "Finished successfully")
+
+}
+
+func (c *Context) findList(i TodoItem) (TodoList, error) {
+
+	l := TodoList{}
+	err := c.Database.Retrieve(i.ListId, &l)
+	if err != nil {
+		return l, err
+	}
+	return l, nil
+
+}
+
+func (c *Context) sendPushNotification(i TodoItem, l TodoList) error {
+
+	// TODO: since the todo item doesn't have a field that records
+	// who added it, there's no way to not send the notification
+	// to the adder.
+
+	for _, member := range l.Members {
+		log.Printf("Send notification to %v", member)
+
+	}
+
+	return nil
 }
 
 func ConfigMiddleware(databaseURL string) func(*Context, web.ResponseWriter, *web.Request, web.NextMiddlewareFunc) {

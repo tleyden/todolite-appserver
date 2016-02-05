@@ -43,7 +43,7 @@ func NewTodoLiteChange(database couch.Database, change couch.Change) *TodoliteCh
 		}
 		todoliteChange.Type = todoItem.Type
 		switch todoItem.Type {
-		case "task":
+		case Task:
 			todoliteChange.Title = todoItem.Title
 			listItem := TodoItem{}
 			err := database.Retrieve(todoItem.ListId, &listItem)
@@ -54,10 +54,10 @@ func NewTodoLiteChange(database couch.Database, change couch.Change) *TodoliteCh
 			}
 			todoliteChange.Parent = listItem.Title
 
-		case "list":
+		case List:
 			todoliteChange.Title = todoItem.Title
 			todoliteChange.Parent = "N/A"
-		case "profile":
+		case Profile:
 			todoliteChange.Title = todoItem.Id
 			todoliteChange.Parent = "N/A"
 		}
