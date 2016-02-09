@@ -1,7 +1,11 @@
 language: go
+
 go: 
- - 1.4.2
  - 1.5.1
+
+env:
+  global:
+  - GO15VENDOREXPERIMENT='1'
 
 script:
  - go test -v ./...
