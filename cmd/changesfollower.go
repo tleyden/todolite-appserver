@@ -1,7 +1,8 @@
 package cmd
 
 import (
-	"github.com/alecthomas/kingpin"
+	"fmt"
+
 	"github.com/couchbaselabs/logg"
 	"github.com/spf13/cobra"
 	"github.com/tleyden/todolite-appserver/libtodolite"
@@ -25,13 +26,12 @@ var changesfollowerCmd = &cobra.Command{
 	Long:  `This has the ability to run images through OCR.  In the future, it will be able to send push notifications, etc.`,
 	Run: func(cmd *cobra.Command, args []string) {
 
-		// kingpin.Parse()
 		if *url == "" {
-			kingpin.Errorf("URL is empty")
+			logg.LogError(fmt.Errorf("URL is empty"))
 			return
 		}
 		if *openOcrUrl == "" {
-			kingpin.Errorf("OpenOcr URL is empty")
+			logg.LogError(fmt.Errorf("OpenOcr URL is empty"))
 			return
 		}
 
