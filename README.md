@@ -7,7 +7,8 @@ This is a backend component for [ToDoLite-iOS](https://github.com/couchbaselabs/
 ## How to use this
 
 ```
-$ go get github.com/tleyden/todolite-appserver
+$ export GO15VENDOREXPERIMENT=1
+$ go get -u github.com/tleyden/todolite-appserver
 $ todolite-appserver --help
 ```
 
