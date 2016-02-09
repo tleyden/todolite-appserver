@@ -1,3 +1,4 @@
+[![Build Status](https://travis-ci.org/tleyden/todolite-appserver.svg?branch=master)](https://travis-ci.org/tleyden/todolite-appserver)
 
 This is a backend component for [ToDoLite-iOS](https://github.com/couchbaselabs/ToDoLite-iOS) which has the following commands:
 
